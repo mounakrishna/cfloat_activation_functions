@@ -1,10 +1,21 @@
 package common;
 
-  function Bool isZero(Bit#(5) exp, Bit#(2) man);
+  /*doc: function: Returns whether the input number is a zero or not */
+  function Bool isZero(Int#(7) exp, Bit#(2) man);
     return (exp == 0 && man == 0);
-  endfunction
+  endfunction : isZero
 
-  function Bool isDenormal();
+  /*doc: function: Returns whether the input number is a denormal number or not.*/
+  function Bool isDenormal(Int#(7) exp, Bit#(2) man);
     return (exp == 0 && man != 0);
-  endfunction
+  endfunction : isDenormal
+
+  /*doc: funciton: Returns the hiddenBit of the input number depending on whether it is a
+         normal number or denormal number.*/
+  function Bit#(1) hiddenBit(Int#(7) exp, Bit#(2) man);
+    if (isDenormal(exp, man))
+      return 0;
+    else
+      return 1;
+  endfunction : hiddenBit
 endpackage

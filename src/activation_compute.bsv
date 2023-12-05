@@ -14,28 +14,32 @@ package activation_compute;
   import FIFO :: *;
 
   interface Ifc_activation_compute;
-    interface Put#(cfloat_1_5_2, Bit#(6)) put_input;
+    interface Put#(cfloat_1_5_2, Int#(6)) put_input;
     interface Get#(Maybe#(cfloat_1_5_2)) get_output;
   endinterface: Ifc_activation_compute
 
   module mkactivation_compute;
     /*doc: fifo: FIFO to store the inputs*/
-    FIFOF#(Tuple2#(cfloat_1_5_2, Bit#(6))) ff_input <- mkFIFOF();
-    FIFOF#(Operation) ff_input_operation <- mkFIFOF();
+    FIFOF#(Tuple2#(cfloat_1_5_2, Int#(6))) ff_input <- mkPipelineFIFOF();
+    FIFOF#(Operation) ff_input_operation <- mkPipelineFIFOF();
 
     /*doc: fifo: FIFO to store the outputs*/
-    FIFOF#(Maybe#(cfloat_1_5_2)) ff_output <- mkFIFOF();
+    FIFOF#(Maybe#(cfloat_1_5_2)) ff_output <- mkPipelineFIFOF();
 
-    /*doc: rule: Get the inputs and start the required operation.  */
+    /*doc: rule: Get the inputs, preprocess the input and fire the corresponding rules
+           for the required operation.  */
     rule rl_preprocessing;
       let {lv_input, lv_bias} = ff_input.first;
       let lv_operation = ff_input_operation.first;
       ff_input.deq;
       ff_input_operation.deq;
+
+      Int#(7) actual_inp_exp = lv_input.exp - zeroExtend(bias);
+      Bit#(3) actual_mantissa = {hiddenBit(actual_inp_exp, lv_input.mantissa), lv_input.mantissa};
     endrule: rl_preprocessing
 
     interface put_input = interface Put
-      method Action put(cfloat_1_5_2 in, Bit#(6) bias, Operation operation);
+      method Action put(cfloat_1_5_2 in, Int#(6) bias, Operation operation);
         ff_input.enq(tuple2(in, bias));
         ff_input_operation.enq(operation);
       endmethod
