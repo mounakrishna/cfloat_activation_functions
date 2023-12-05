@@ -9,9 +9,9 @@ package types;
 
   typedef struct {
     Bit#(1) sign; // 1 - Negative, 0 - Positive
-    Bit#(5) exp;
+    Int#(5) exp;
     Bit#(2) mantissa;
   } cfloat_1_5_2 deriving(Bits, Eq, FShow);
 
-  typedef enum {Tanh, Sigmoid, ReLu, SeLu} Operation deriving(Bits, Eq, FShow);
+  typedef enum {Tanh, Sigmoid, ReLu, SeLu, NONE} Operation deriving(Bits, Eq, FShow);
 endpackage
