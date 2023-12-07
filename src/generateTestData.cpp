@@ -13,10 +13,10 @@ void solve(){
     ofstream MyFile("filename.txt");
     string sign = "-";
     string mantissa = "00";
-    int exponent = 62;
-    MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
-    exponent--;
-    while(exponent != 0){
+    int exponent = -62;
+    // MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
+    // exponent--;
+    while(exponent != 32){
         mantissa = "00";
         MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
         mantissa = "01";
@@ -25,13 +25,15 @@ void solve(){
         MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
         mantissa = "11";
         MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
-        exponent--;
+        exponent++;
         MyFile<<endl;
     }
 
-    exponent = -32;
     sign = "+";
-
+    mantissa = "00";
+    exponent = -62;
+    // MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
+    // exponent--;
     while(exponent != 32){
         mantissa = "00";
         MyFile<<sign<<" "<<mantissa<<" "<<exponent<<endl;
