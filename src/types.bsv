@@ -13,5 +13,29 @@ package types;
     Bit#(2) mantissa;
   } cfloat_1_5_2 deriving(Bits, Eq, FShow);
 
-  typedef enum {Tanh, Sigmoid, ReLu, SeLu, NONE} Operation deriving(Bits, Eq, FShow);
+  typedef enum {Tanh, Sigmoid, LeakyReLu, SeLu} Operation deriving(Bits, Eq, FShow);
+
+  typedef struct {
+    cfloat_1_5_2 inp;
+    Int#(6) bias;
+    Operation op;
+  } PreprocessStageMeta deriving(Bits, Eq, FShow);
+
+  typedef struct {
+    Bit#(1) sign,
+    Int#(8) act_exp,
+    Bit#(3) act_mantissa,
+    Int#(6) bias,
+    Operation op;
+  } ComputeStageMeta deriving(Bits, Eq, FShow);
+
+  typedef struct {
+  } PostprocessStageMeta deriving(Bits, Eq, FShow);
+
+  typedef struct {
+    Bit#(1) final_sign,
+    Int#(8) final_exp,
+    Bit#(3) final_mantissa,
+  } OutputStageMeta deriving(Bits, Eq, FShow);
+
 endpackage
