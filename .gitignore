@@ -11,5 +11,6 @@ run.log
 .python-version
 
 build/
+verilog/
 
 depends.mk
