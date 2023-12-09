@@ -1,1 +1,15 @@
-src/.common.bsv.swp
+obj_dir/
+bsv_build/
+bin/
+old_vars
+sim_main\.h
+makefile.inc
+*.pyc
+*.swp
+_pycache_
+run.log
+.python-version
+
+build/
+
+depends.mk
