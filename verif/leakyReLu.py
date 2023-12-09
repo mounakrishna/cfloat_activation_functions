@@ -78,9 +78,9 @@ if __name__=="__main__":
     gen_inp_cfloat_numbers()
     #for exp in range(1, 32):
     #    print(possible_inp[exp])
-    print(possible_inp[2][0])
-    print(decimal_to_cfloat(possible_inp[2][0]))
-    print(decimal_to_cfloat(leakyRelu(-1*possible_inp[2][0])))
+    #print(possible_inp[2][0])
+    #print(decimal_to_cfloat(possible_inp[2][0]))
+    #print(decimal_to_cfloat(leakyRelu(-1*possible_inp[2][0])))
     #number = -37.5
     ref_file = open("leakyReLu_ref.txt", "w")
 
@@ -90,10 +90,11 @@ if __name__=="__main__":
             #print(decimal_to_cfloat(possible_inp[exp][m]))
             (inp_dec, inp_man), inp_exp = decimal_to_cfloat(possible_inp[exp][m])
             (out_dec, out_man), out_exp = decimal_to_cfloat(leakyRelu(possible_inp[exp][m] * -1))
-            print("exp: ", exp, "m: ", m, "inp: ", possible_inp[exp][m])
-            print("inp_dec: ", inp_dec ," inp_man: ", inp_man," inp_exp: ", inp_exp)
-            print("out_dec: ", out_dec ," out_man: ", out_man," out_exp: ", out_exp)
-            ref_file.write(str(inp_dec) + ' ' + str(inp_man) + ' ' + str(inp_exp) + ' ' + str(out_dec) + ' ' + str(out_man) + ' ' + str(out_exp) + '\n')
+            #print("exp: ", exp, "m: ", m, "inp: ", possible_inp[exp][m])
+            #print("inp_dec: ", inp_dec ," inp_man: ", inp_man," inp_exp: ", inp_exp)
+            #print("out_dec: ", out_dec ," out_man: ", out_man," out_exp: ", out_exp)
+            #ref_file.write(str(inp_dec) + ' ' + str(inp_man) + ' ' + str(inp_exp) + ' ' + str(out_dec) + ' ' + str(out_man) + ' ' + str(out_exp) + '\n')
+            ref_file.write('1'+"{0:05b}".format(inp_exp)+"{0:02b}".format(inp_man)+'1'+"{0:05b}".format(out_exp)+"{0:02b}".format(out_man)+'\n')
 
     ref_file.close()
 

@@ -9,7 +9,7 @@ package types;
 
   typedef struct {
     Bit#(1) sign; // 1 - Negative, 0 - Positive
-    Int#(5) exp;
+    Bit#(5) exp;
     Bit#(2) mantissa;
   } Cfloat_1_5_2 deriving(Bits, Eq, FShow);
 

@@ -17,19 +17,22 @@ package activation_compute;
   import GetPut :: *;
   import types :: *;
   import FIFO :: *;
+  import FIFOF :: *;
+  import common :: *;
+  import SpecialFIFOs :: *;
 
   interface Ifc_activation_compute;
-    interface Put#(Cfloat_1_5_2, Int#(6)) put_input;
-    interface Get#(Maybe#(Cfloat_1_5_2)) get_output;
+    method Action ma_input(Cfloat_1_5_2 inp, Int#(6) bias, Operation op);
+    method ActionValue#(Maybe#(OutputStageMeta)) mav_output;
   endinterface: Ifc_activation_compute
 
-  module mkactivation_compute;
+  module mkactivation_compute(Ifc_activation_compute);
     /*doc: fifo: FIFO to store the inputs*/
     FIFOF#(PreprocessStageMeta) ff_input <- mkPipelineFIFOF();
 
     /*doc: fifo: The preprocessed outputs are taken from previous stage and are passed onto compute
            stage via these FIFOs.*/
-    FIFOF#(ComputeStageMeta) ff_start_compute <- mkPipelineFIFOF();
+    FIFOF#(ComputeStageMeta) ff_compute <- mkPipelineFIFOF();
 
     /*doc: fifo: The computed output from previous stage is taken and post processed.
                  Post processed in the sense, normalisation, exception flag calculation*/
@@ -48,13 +51,13 @@ package activation_compute;
       let lv_bias = ff_input.first.bias;
       Flags lv_flags = unpack(0);
 
-      if(isDenormal(lv_input.exp))
+      if(isDenormal(lv_input.exp, lv_input.mantissa))
         lv_flags.denormal = True;
 
-      Int#(8) actual_inp_exp = zeroExtend(lv_input.exp) - zeroExtend(bias);
+      Int#(8) actual_inp_exp = unpack(zeroExtend(lv_input.exp)) - zeroExtend(lv_bias);
       Bit#(3) actual_mantissa = {hiddenBit(lv_input.exp), lv_input.mantissa};
 
-      ff_compute.enq(ComputeStageMeta { sign: ff_input.first.inp.sign
+      ff_compute.enq(ComputeStageMeta { sign: ff_input.first.inp.sign,
                                         act_exp: actual_inp_exp,
                                         act_mantissa: actual_mantissa,
                                         bias: lv_bias,
@@ -71,25 +74,26 @@ package activation_compute;
            the output is calculated as a LUT to save on after multiplication normalisation logic.
            If the input is a denormal number, the output is always zero as the exponent exceeds bias value.
            Else value is taken from LUT if input is less than zero. The output in this case can still exceed 
-           the range. The post processing stage will take care of the normailsation.
+           the range. The post processing stage will take care of the normalisation.
     */
     rule rl_compute_LeakyReLu(ff_compute.first.op == LeakyReLu && ff_compute.notEmpty);
       ff_compute.deq;
       let data = ff_compute.first;
 
       PostprocessStageMeta lv_output;
+      let bias = data.bias;
       lv_output.bias = data.bias;
       lv_output.flags = data.flags;
       lv_output.final_sign = data.sign;
       lv_output.round_up = False;
 
       if (data.sign == 0) begin
-        lv_output.final_exp = data.exp;
+        lv_output.final_exp = data.act_exp;
         lv_output.final_mantissa = data.act_mantissa;
       end
       else begin
         if (data.act_mantissa[2] == 0) begin
-          lv_output.final_exp = -bias;
+          lv_output.final_exp = signExtend(-bias);
           lv_output.final_mantissa = 0;
           lv_output.flags.underflow = True;
         end
@@ -131,16 +135,25 @@ package activation_compute;
       ff_post_process.deq;
       let computed_output = ff_post_process.first;
       Cfloat_1_5_2 final_output;
+      let bias = computed_output.bias;
 
       if (computed_output.final_exp < signExtend(-bias-3)) begin
-        computed_flags.underflow = True;
+        computed_output.flags.underflow = True;
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: 0,
                                       mantissa: 2'b00
                                     };
       end
-      else if (computed_output.final_exp >= signExtend(-bias-3) 
-               && computed_output.final_exp <= signExtend(-bias)) begin
+      else if (computed_output.final_exp >= signExtend(-bias-3)
+              && computed_output.final_exp < signExtend(-bias)) begin
+        //Integer number_of_shift = unpack(pack(-bias)) + unpack(pack(-compute_output.final_exp));
+        Bit#(4) calc_final_mantissa = zeroExtend(computed_output.final_mantissa) >> (signExtend(-bias) - computed_output.final_exp);
+        if (calc_final_mantissa[0] == 1)
+          calc_final_mantissa = calc_final_mantissa + 1;
+        final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
+                                      exp: 0,
+                                      mantissa: truncate(calc_final_mantissa)
+                                    };
       end
       else if (computed_output.final_exp > signExtend(-bias + 31)) begin
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
@@ -150,8 +163,8 @@ package activation_compute;
       end
       else begin
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
-                                      exp: truncate(signExtend(bias) + computed_output.final_exp), 
-                                      mantissa: computed_output.final_mantissa
+                                      exp: pack(truncate(signExtend(bias) + computed_output.final_exp)), 
+                                      mantissa: truncate(computed_output.final_mantissa)
                                     };
       end
 
@@ -160,20 +173,16 @@ package activation_compute;
                                     });
     endrule
 
-    interface put_input = interface Put
-      method Action put(Cfloat_1_5_2 in, Int#(6) bias, Operation operation);
-        ff_input.enq(PreprocessStageMeta { inp: in,
-                                           bias: bias,
-                                           op: operation
-                                         });
-      endmethod
-    endinterface;
+    method Action ma_input(Cfloat_1_5_2 inp, Int#(6) bias,Operation op);
+      ff_input.enq(PreprocessStageMeta { inp: inp,
+                                         bias: bias,
+                                         op: op
+                                       });
+    endmethod
 
-    interface get_output = interface Get
-      method ActionValue#(Maybe#(OutputStageMeta)) get;
-        ff_output.deq;
-        return tagged Valid ff_output.first;
-      endmethod
-    endinterface;
+    method ActionValue#(Maybe#(OutputStageMeta)) mav_output;
+      ff_output.deq;
+      return tagged Valid ff_output.first;
+    endmethod
   endmodule
 endpackage
