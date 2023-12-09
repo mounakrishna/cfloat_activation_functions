@@ -85,11 +85,17 @@ package sigmoid_lut;
     rg_exp_output[34] = readOnlyReg(0);
     rg_exp_output[35] = readOnlyReg(0);
 
-    interface Ifc_sigmoid_lut_region_2;
-    method Tuple2#(Bit#(5), Bit#(2)) mv_sig_output(Bit#(4) exp, Bit#(2) man);
+    method Tuple2#(Int#(7), Bit#(2)) mv_sig_output(Bit#(4) exp, Bit#(2) man);
+      Bit#(6) index = {man, exp};
+      return tuple2(rg_man_output[index], rg_exp_output[index]);
+    endmethod
+  endmodule
+
+  interface Ifc_sigmoid_lut_region_2;
+    method Tuple2#(Int#(7), Bit#(2)) mv_sig_output(Bit#(2) exp, Bit#(2) man);
   endinterface
 
-  module mksigmoid_lut_region_1(Ifc_sigmoid_lut_region_2);
+  module mksigmoid_lut_region_2(Ifc_sigmoid_lut_region_2);
     Reg#(Bit#(2)) rg_man_output[16];
     rg_man_output[0] = readOnlyReg(0); 
     rg_man_output[1] = readOnlyReg(1); 
@@ -126,8 +132,8 @@ package sigmoid_lut;
     rg_exp_output[14] = readOnlyReg(0);
     rg_exp_output[15] = readOnlyReg(0);
 
-    method Tuple2#(Bit#(5), Bit#(2)) mv_sig_output(Bit#(4) exp, Bit#(2) man);
-      Bit#(6) index = {man, exp};
+    method Tuple2#(Int#(7), Bit#(2)) mv_sig_output(Bit#(2) exp, Bit#(2) man);
+      Bit#(4) index = {man, exp};
       return tuple2(rg_man_output[index], rg_exp_output[index]);
     endmethod
   endmodule
