@@ -12,10 +12,10 @@ package common;
 
   /*doc: funciton: Returns the hiddenBit of the input number depending on whether it is a
          normal number or denormal number.*/
-  function Bit#(1) hiddenBit(Int#(7) exp, Bit#(2) man);
-    if (isDenormal(exp, man))
-      return 0;
+  function Bit#(1) hiddenBit(Int#(7) exp);
+    if (exp == 0)
+      return 0
     else
-      return 1;
+      return 1
   endfunction : hiddenBit
 endpackage
