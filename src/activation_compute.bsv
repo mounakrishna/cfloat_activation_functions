@@ -89,7 +89,7 @@ package activation_compute;
 
       if (data.sign == 0) begin
         lv_output.final_exp = data.act_exp;
-        lv_output.final_mantissa = data.act_mantissa;
+        lv_output.final_mantissa = {data.act_mantissa, 1'b0};
       end
       else begin
         if (data.act_mantissa[2] == 0) begin
@@ -101,28 +101,29 @@ package activation_compute;
           case(data.act_mantissa[1:0])
             2'b00: begin
               lv_output.final_exp = data.act_exp - 7;
-              lv_output.final_mantissa = 3'b101;
+              lv_output.final_mantissa = 4'b1010;
             end
             2'b01: begin
               lv_output.final_exp = data.act_exp - 7;
-              lv_output.final_mantissa = 3'b110;
+              lv_output.final_mantissa = 4'b1100;
               lv_output.flags.overflow = True;
             end
             2'b10: begin
-              lv_output.final_exp = data.act_exp - 6;
-              lv_output.final_mantissa = 3'b100; //Round to nearest
+              lv_output.final_exp = data.act_exp - 7;
+              lv_output.final_mantissa = 4'b1111; //Round to nearest
               lv_output.flags.overflow = True;
               lv_output.round_up = True;
             end
             2'b11: begin
+              //$display("Hello");
               lv_output.final_exp = data.act_exp - 6;
-              lv_output.final_mantissa = 3'b100;
+              lv_output.final_mantissa = 4'b1000;
               lv_output.flags.overflow = True;
               lv_output.round_up = True;
             end
             default: begin
               lv_output.final_exp = 0;
-              lv_output.final_mantissa = 3'b000;
+              lv_output.final_mantissa = 4'b0000;
             end
           endcase
         end
@@ -147,12 +148,15 @@ package activation_compute;
       else if (computed_output.final_exp >= signExtend(-bias-3)
               && computed_output.final_exp < signExtend(-bias)) begin
         //Integer number_of_shift = unpack(pack(-bias)) + unpack(pack(-compute_output.final_exp));
-        Bit#(4) calc_final_mantissa = zeroExtend(computed_output.final_mantissa) >> (signExtend(-bias) - computed_output.final_exp);
+        $display(computed_output.final_mantissa);
+        $display(signExtend(-bias) - computed_output.final_exp);
+        Bit#(4) calc_final_mantissa = computed_output.final_mantissa >> (signExtend(-bias) - computed_output.final_exp);
+        $display(calc_final_mantissa);
         if (calc_final_mantissa[0] == 1)
           calc_final_mantissa = calc_final_mantissa + 1;
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: 0,
-                                      mantissa: truncate(calc_final_mantissa)
+                                      mantissa: calc_final_mantissa[2:1]
                                     };
       end
       else if (computed_output.final_exp > signExtend(-bias + 31)) begin
@@ -162,9 +166,17 @@ package activation_compute;
                                     };
       end
       else begin
+        $display("before: %d", computed_output.final_mantissa);
+        if (computed_output.final_mantissa[0] == 1)
+          computed_output.final_mantissa = computed_output.final_mantissa + 1;
+        if (computed_output.final_mantissa == 0) begin
+          computed_output.final_mantissa = 4'b1000;
+          computed_output.final_exp = computed_output.final_exp + 1;
+        end
+        $display("after: %d", computed_output.final_mantissa);
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: pack(truncate(signExtend(bias) + computed_output.final_exp)), 
-                                      mantissa: truncate(computed_output.final_mantissa)
+                                      mantissa: computed_output.final_mantissa[2:1]
                                     };
       end
 

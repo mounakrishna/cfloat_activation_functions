@@ -40,7 +40,7 @@ package types;
   typedef struct {
     Bit#(1) final_sign;
     Int#(8) final_exp;
-    Bit#(3) final_mantissa;
+    Bit#(4) final_mantissa;
     Bool round_up;
     Int#(6) bias;
     Flags flags;
