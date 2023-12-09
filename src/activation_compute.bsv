@@ -20,6 +20,7 @@ package activation_compute;
   import FIFOF :: *;
   import common :: *;
   import SpecialFIFOs :: *;
+  import sigmoid_lut :: *;
 
   interface Ifc_activation_compute;
     method Action ma_input(Cfloat_1_5_2 inp, Int#(6) bias, Operation op);
@@ -40,6 +41,9 @@ package activation_compute;
 
     /*doc: fifo: FIFO to store the outputs*/
     FIFOF#(OutputStageMeta) ff_output <- mkFIFOF();
+
+    Ifc_sigmoid_lut_region_1 sigmoid_lut1 <- mksigmoid_lut_region_1;
+    Ifc_sigmoid_lut_region_2 sigmoid_lut2 <- mksigmoid_lut_region_2;
 
     /*doc: rule: Get the inputs, preprocess the input and fire the corresponding rules
            for the required operation.  
@@ -66,6 +70,53 @@ package activation_compute;
                                       });
     endrule: rl_preprocessing
 
+    rule rl_compute_sigmoid(ff_compute.first.op == Sigmoid && ff_compute.notEmpty);
+      ff_compute.deq;
+      let data = ff_compute.first;
+
+      PostprocessStageMeta lv_output;
+      let bias = data.bias;
+      lv_output.flags = data.flags;
+      lv_output.final_sign = 0;
+
+      if (data.sign == 1) begin
+        if (data.act_exp >= -63 && data.act_exp <= -4) begin
+          lv_output.final_mantissa = 4'b1000;
+          lv_output.final_exp = -1;
+        end
+        else if (data.act_exp >= -3 && data.act_exp <= 5) begin
+          Bit#(4) exp_index = truncate(pack(data.act_exp + 3));
+          let lut_output = sigmoid_lut1.mv_sig_output(exp_index, data.act_mantissa[1:0]);
+          lv_output.final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
+          lv_output.final_exp = signExtend(tpl_1(lut_output));
+        end
+        else begin // exp >= 6
+          lv_output.final_mantissa = 0;
+          lv_output.final_exp = 0;
+        end
+      end
+      else begin
+        if (data.act_exp == -63) begin
+          lv_output.final_mantissa = 0;
+          lv_output.final_exp = -1;
+        end
+        else if (data.act_exp >= -62 && data.act_exp <= -3) begin
+          lv_output.final_mantissa = 0;
+          lv_output.final_exp = 1;
+        end
+        else if (data.act_exp >= -2 && data.act_exp <= 1) begin
+          Bit#(2) exp_index = truncate(pack(data.act_exp + 2));
+          let lut_output = sigmoid_lut2.mv_sig_output(exp_index, data.act_mantissa[1:0]);
+          lv_output.final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
+          lv_output.final_exp = signExtend(tpl_1(lut_output));
+        end
+        else begin
+          lv_output.final_mantissa = {1'b1, 2'b11, 1'b0};
+          lv_output.final_exp = 0;
+        end
+      end
+    endrule
+
     /*doc: rule: The rule computes the LeakyReLu of the input data.
            Formula:
            output = max(0.01*x, x) 
@@ -85,7 +136,6 @@ package activation_compute;
       lv_output.bias = data.bias;
       lv_output.flags = data.flags;
       lv_output.final_sign = data.sign;
-      lv_output.round_up = False;
 
       if (data.sign == 0) begin
         lv_output.final_exp = data.act_exp;
@@ -112,14 +162,12 @@ package activation_compute;
               lv_output.final_exp = data.act_exp - 7;
               lv_output.final_mantissa = 4'b1111; //Round to nearest
               lv_output.flags.overflow = True;
-              lv_output.round_up = True;
             end
             2'b11: begin
               //$display("Hello");
               lv_output.final_exp = data.act_exp - 6;
               lv_output.final_mantissa = 4'b1000;
               lv_output.flags.overflow = True;
-              lv_output.round_up = True;
             end
             default: begin
               lv_output.final_exp = 0;
