@@ -39,7 +39,7 @@ vector<string> decimalToBinary(double input){
     input = abs(input);
     // 1.00 to 1.75 * 2^exponent
     int exponent = -62;
-    // exponent = -200;
+    exponent = -1000;
     if(input == 0){
         ans[0] = "zero";
         ans[1] = "zero";
@@ -68,6 +68,12 @@ vector<string> decimalToBinary(double input){
             break;
         }
         else exponent++;
+    }
+    if(exponent < -62){
+        ans[0] = "zero";
+        ans[1] = "zero";
+        ans[2] = "zero";
+        return ans;
     }
     if(exponent == 0){
         if(input < 0.125){

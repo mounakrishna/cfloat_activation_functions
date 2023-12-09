@@ -335,26 +335,26 @@
 
 + 11 -47
 + 01 -58
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
 zero zero zero
 zero zero zero
 

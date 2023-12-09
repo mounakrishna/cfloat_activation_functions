@@ -1198,15 +1198,15 @@ zero zero zero
 - 10 -1
 - 11 -1
 
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
+zero zero zero
 + 00 -62
 + 10 -62
 

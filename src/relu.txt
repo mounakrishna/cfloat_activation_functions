@@ -1,36 +1,36 @@
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+- 00 -62
 - 00 -62
 
 - 01 -62
@@ -938,47 +938,47 @@ zero zero zero
 + 10 31
 + 11 31
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
 
 Denormal numbers
 
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-- 11 32
-- 11 32
-- 11 32
+zero zero zero
+zero zero zero
+- 00 -62
 
-- 11 32
+zero zero zero
 - 01 -62
 - 00 -61
 
@@ -1198,15 +1198,15 @@ Denormal numbers
 - 01 -8
 - 00 -7
 
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
-+ 11 32
-+ 11 32
+zero zero zero
+zero zero zero
+zero zero zero
 
-+ 11 32
+zero zero zero
 + 00 -62
 + 10 -62
 
