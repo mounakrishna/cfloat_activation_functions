@@ -17,7 +17,16 @@ package Testbench;
     let fcompute <- mkactivation_compute;
 
     //FIFOF#(Tuple2#(Bit#(`FLEN), Bit#(5))) ff_golden_output <- mkSizedFIFOF(1);
-    FIFOF#(Tuple2#(Cfloat_1_5_2, Bit#(8))) ff_golden_output <- mkSizedFIFOF(1);
+    FIFOF#(Tuple2#(Bit#(8), Bit#(8))) ff_golden_output <- mkSizedFIFOF(1);
+
+    Reg#(Bit#(8)) rg_e_out_1 <- mkReg(0);
+    Reg#(Bit#(8)) rg_inp_1 <- mkReg(0);
+
+    Reg#(Bit#(8)) rg_e_out_2 <- mkReg(0);
+    Reg#(Bit#(8)) rg_inp_2 <- mkReg(0);
+
+    Reg#(Bit#(8)) rg_e_out_3 <- mkReg(0);
+    Reg#(Bit#(8)) rg_inp_3 <- mkReg(0);
 
     //Reg#(int) cycle <- mkReg(0);
     Reg#(Bit#(`index_size)) read_index <- mkReg(0);
@@ -32,6 +41,17 @@ package Testbench;
       end
    endrule
 */
+
+    Reg#(Bit#(32)) rg_cycle <- mkReg(0);
+    //Reg#(Bool) _ready <- mkReg(False);
+
+    //rule cycle;
+    //  if(rg_cycle==3)
+    //   _ready<=True;
+    //  else
+    //   rg_cycle<=rg_cycle+1;
+    //endrule
+
     /*doc:rule: */
     rule rl_pick_stimulus_entry;      
       let _e = stimulus.sub(read_index);
@@ -44,17 +64,32 @@ package Testbench;
       //let out = Cfloat_1_5_2{sign: _output[7], exp: unpack(_output[6:2]), mantissa: _output[1:0]};
 
       fcompute.ma_input(op, 0, LeakyReLu);
-      ff_golden_output.enq(tuple2(op, _output));
-
+      ff_golden_output.enq(tuple2(_inp, _output));
+      //rg_e_out_1 <= _output;
+      //rg_inp_1 <= _inp;
     endrule
+
+    //rule r1;
+    //  rg_e_out_2 <= rg_e_out_1;
+    //  rg_inp_2 <= rg_inp_1;
+    //endrule
+
+    //rule r2;
+    //  rg_e_out_3 <= rg_e_out_2;
+    //  rg_inp_3 <= rg_inp_2;
+    //endrule
 
     /*doc:rule: */
     rule rl_check_output;
       let x <- fcompute.mav_output();
+      rg_cycle <= rg_cycle + 1;
+      //$display("cycle: %d", rg_cycle);
       if(x matches tagged Valid .lv_output) begin
         let out = lv_output.out;
         let flags = lv_output.flags;
         let {in, e_out} = ff_golden_output.first;
+        //let in = rg_inp_3;
+        //let e_out = rg_e_out_3;
         Bit#(8) _out = {pack(out.sign), pack(out.exp), out.mantissa};
         ff_golden_output.deq;
         if( _out != e_out) begin
@@ -62,6 +97,7 @@ package Testbench;
 //          $finish(0);
         end
         else begin
+          `logLevel( tb, 0, $format("TB: Outputs match[%d]. in: %h e_out:%h out:%h,flag %h", golden_index, in, e_out, _out, flags))
             //`logLevel( tb, 0, $format("TB: Outputs match [%d], g: %h R: %h  FLAGS G: %h,  R:  %h", golden_index,e_out, _out,e_flags,flags))
         end
         golden_index <= golden_index + 1;

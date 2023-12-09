@@ -94,7 +94,10 @@ if __name__=="__main__":
             #print("inp_dec: ", inp_dec ," inp_man: ", inp_man," inp_exp: ", inp_exp)
             #print("out_dec: ", out_dec ," out_man: ", out_man," out_exp: ", out_exp)
             #ref_file.write(str(inp_dec) + ' ' + str(inp_man) + ' ' + str(inp_exp) + ' ' + str(out_dec) + ' ' + str(out_man) + ' ' + str(out_exp) + '\n')
-            ref_file.write('1'+"{0:05b}".format(inp_exp)+"{0:02b}".format(inp_man)+'1'+"{0:05b}".format(out_exp)+"{0:02b}".format(out_man)+'\n')
+            inp_bit = '1'+"{0:05b}".format(inp_exp)+"{0:02b}".format(inp_man)
+            out_bit = '1'+"{0:05b}".format(out_exp)+"{0:02b}".format(out_man)
+            ref_file.write("{0:02x}".format(int(inp_bit, 2)) + "{0:02x}".format(int(out_bit, 2)) + '\n')
+            #ref_file.write('1'+"{0:05b}".format(inp_exp)+"{0:02b}".format(inp_man)+'1'+"{0:05b}".format(out_exp)+"{0:02b}".format(out_man)+'\n')
 
     ref_file.close()
 

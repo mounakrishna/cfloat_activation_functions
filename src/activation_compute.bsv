@@ -28,18 +28,18 @@ package activation_compute;
 
   module mkactivation_compute(Ifc_activation_compute);
     /*doc: fifo: FIFO to store the inputs*/
-    FIFOF#(PreprocessStageMeta) ff_input <- mkPipelineFIFOF();
+    FIFOF#(PreprocessStageMeta) ff_input <- mkFIFOF();
 
     /*doc: fifo: The preprocessed outputs are taken from previous stage and are passed onto compute
            stage via these FIFOs.*/
-    FIFOF#(ComputeStageMeta) ff_compute <- mkPipelineFIFOF();
+    FIFOF#(ComputeStageMeta) ff_compute <- mkFIFOF();
 
     /*doc: fifo: The computed output from previous stage is taken and post processed.
                  Post processed in the sense, normalisation, exception flag calculation*/
-    FIFOF#(PostprocessStageMeta) ff_post_process <- mkPipelineFIFOF();
+    FIFOF#(PostprocessStageMeta) ff_post_process <- mkFIFOF();
 
     /*doc: fifo: FIFO to store the outputs*/
-    FIFOF#(OutputStageMeta) ff_output <- mkPipelineFIFOF();
+    FIFOF#(OutputStageMeta) ff_output <- mkFIFOF();
 
     /*doc: rule: Get the inputs, preprocess the input and fire the corresponding rules
            for the required operation.  
