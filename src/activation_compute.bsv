@@ -3,6 +3,11 @@ Details:
 The top module where all the computing submodules are instantiated and controlled
 as per required.
 
+Notes on Exceptions:
+Invalid flag is never set as cfloat_1_5_2 implementation doesnt support NaN encodings.
+Denormal flag is set when there is an operation with operand being a denormal number.
+Overflow flag is set when the number was not able to be represented in the 2 mantissa bits of the format.
+Underflow flag is set when the computed number is less than smallest possible number (i.e) 0.25 x 2^-bias.
 Author: Mouna Krishna
 email: mounakrishna27121999@gmail.com
 */
@@ -14,8 +19,8 @@ package activation_compute;
   import FIFO :: *;
 
   interface Ifc_activation_compute;
-    interface Put#(cfloat_1_5_2, Int#(6)) put_input;
-    interface Get#(Maybe#(cfloat_1_5_2)) get_output;
+    interface Put#(Cfloat_1_5_2, Int#(6)) put_input;
+    interface Get#(Maybe#(Cfloat_1_5_2)) get_output;
   endinterface: Ifc_activation_compute
 
   module mkactivation_compute;
@@ -37,19 +42,24 @@ package activation_compute;
            for the required operation.  
            Preprocessing the input involves finding the actual final exponent after subtracting with bias
            and then deducing the actual mantissa with hidden bit.*/
-    rule rl_preprocessing;
+    rule rl_preprocessing(ff_input.notEmpty);
       ff_input.deq;
       let lv_input= ff_input.first.inp;
       let lv_bias = ff_input.first.bias;
+      Flags lv_flags = unpack(0);
+
+      if(isDenormal(lv_input.exp))
+        lv_flags.denormal = True;
 
       Int#(8) actual_inp_exp = zeroExtend(lv_input.exp) - zeroExtend(bias);
-      Bit#(3) actual_mantissa = {hiddenBit(actual_inp_exp), lv_input.mantissa};
+      Bit#(3) actual_mantissa = {hiddenBit(lv_input.exp), lv_input.mantissa};
 
       ff_compute.enq(ComputeStageMeta { sign: ff_input.first.inp.sign
                                         act_exp: actual_inp_exp,
                                         act_mantissa: actual_mantissa,
                                         bias: lv_bias,
-                                        op: ff_input.first.op
+                                        op: ff_input.first.op,
+                                        flags: lv_flags
                                       });
     endrule: rl_preprocessing
 
@@ -67,8 +77,11 @@ package activation_compute;
       ff_compute.deq;
       let data = ff_compute.first;
 
-      OutputStageMeta lv_output;
+      PostprocessStageMeta lv_output;
+      lv_output.bias = data.bias;
+      lv_output.flags = data.flags;
       lv_output.final_sign = data.sign;
+      lv_output.round_up = False;
 
       if (data.sign == 0) begin
         lv_output.final_exp = data.exp;
@@ -78,6 +91,7 @@ package activation_compute;
         if (data.act_mantissa[2] == 0) begin
           lv_output.final_exp = -bias;
           lv_output.final_mantissa = 0;
+          lv_output.flags.underflow = True;
         end
         else begin
           case(data.act_mantissa[1:0])
@@ -88,14 +102,19 @@ package activation_compute;
             2'b01: begin
               lv_output.final_exp = data.act_exp - 7;
               lv_output.final_mantissa = 3'b110;
+              lv_output.flags.overflow = True;
             end
             2'b10: begin
               lv_output.final_exp = data.act_exp - 6;
               lv_output.final_mantissa = 3'b100; //Round to nearest
+              lv_output.flags.overflow = True;
+              lv_output.round_up = True;
             end
             2'b11: begin
               lv_output.final_exp = data.act_exp - 6;
               lv_output.final_mantissa = 3'b100;
+              lv_output.flags.overflow = True;
+              lv_output.round_up = True;
             end
             default: begin
               lv_output.final_exp = 0;
@@ -108,11 +127,41 @@ package activation_compute;
       ff_post_process.enq(lv_output);
     endrule: rl_compute_LeakyReLu
 
-    rule rl_postprocessing;
+    rule rl_postprocessing(ff_post_process.notEmpty);
+      ff_post_process.deq;
+      let computed_output = ff_post_process.first;
+      Cfloat_1_5_2 final_output;
+
+      if (computed_output.final_exp < signExtend(-bias-3)) begin
+        computed_flags.underflow = True;
+        final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
+                                      exp: 0,
+                                      mantissa: 2'b00
+                                    };
+      end
+      else if (computed_output.final_exp >= signExtend(-bias-3) 
+               && computed_output.final_exp <= signExtend(-bias)) begin
+      end
+      else if (computed_output.final_exp > signExtend(-bias + 31)) begin
+        final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
+                                      exp: 31, 
+                                      mantissa: 2'b11
+                                    };
+      end
+      else begin
+        final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
+                                      exp: truncate(signExtend(bias) + computed_output.final_exp), 
+                                      mantissa: computed_output.final_mantissa
+                                    };
+      end
+
+      ff_output.enq(OutputStageMeta { out : final_output,
+                                      flags : computed_output.flags
+                                    });
     endrule
 
     interface put_input = interface Put
-      method Action put(cfloat_1_5_2 in, Int#(6) bias, Operation operation);
+      method Action put(Cfloat_1_5_2 in, Int#(6) bias, Operation operation);
         ff_input.enq(PreprocessStageMeta { inp: in,
                                            bias: bias,
                                            op: operation
@@ -121,9 +170,9 @@ package activation_compute;
     endinterface;
 
     interface get_output = interface Get
-      method ActionValue#(Maybe#(cfloat_1_5_2)) get;
+      method ActionValue#(Maybe#(OutputStageMeta)) get;
         ff_output.deq;
-        return ff_output.first;
+        return tagged Valid ff_output.first;
       endmethod
     endinterface;
   endmodule
