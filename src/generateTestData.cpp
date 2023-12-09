@@ -18,7 +18,7 @@ double convertToDecimal(string sign, int exponent, string check, string mantissa
     m["10"] = 0.50;
     m["11"] = 0.75;
     double num;
-    if(check == "denormal"){
+    if(check == "denormal" || exponent == 0){
         num = (m[mantissa])*pow(2, exponent);
         if(sign == "-")num = -1*num;
     }
@@ -39,7 +39,7 @@ vector<string> decimalToBinary(double input){
     input = abs(input);
     // 1.00 to 1.75 * 2^exponent
     int exponent = -62;
-    exponent = -200;
+    // exponent = -200;
     if(input == 0){
         ans[0] = "zero";
         ans[1] = "zero";
@@ -69,9 +69,24 @@ vector<string> decimalToBinary(double input){
         }
         else exponent++;
     }
+    if(exponent == 0){
+        if(input < 0.125){
+            ans[1] = "00";
+        }
+        else if(input<0.375){
+            ans[1] = "01";
+        }
+        else if(input<0.625){
+            ans[1] = "10";
+        }
+        else{
+            ans[1] = "11";
+        }
+    }
     ans[2] = to_string(exponent);
     if(exponent == 32){
-        ans[0] = ans[1] = ans[2] = "out of range";
+        ans[1] = "11";
+        ans[2] = "32";
     }
     return ans;
 }
@@ -86,7 +101,7 @@ double calSigmoid(double input){
 
 double calRelu(double input){
     // cout<<input/abs(input)<<endl;
-    if(input < 0) return 0;
+    if(input < 0) return 0.01*input;
     else return input;
 }
 
@@ -136,7 +151,7 @@ void outputGenerator(double input){
 }
 
 void solve(){
-    ofstream MyFile("filename.txt");
+    ofstream MyFile("filename.txt"); // input file
     string sign = "-";
     string mantissa = "00";
     int exponent = -62;
