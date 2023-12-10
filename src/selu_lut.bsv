@@ -455,11 +455,17 @@ package selu_lut;
     rg_exp_output[218] = readOnlyReg(-1);
     rg_exp_output[219] = readOnlyReg(-1);
 
-    interface Ifc_selu_lut_region_2;
+    method Tuple2#(Bit#(5), Bit#(2)) mv_sig_output(Bit#(4) exp, Bit#(2) man);
+      Bit#(6) index = {man, exp};
+      return tuple2(rg_man_output[index], rg_exp_output[index]);
+    endmethod
+  endmodule
+
+  interface Ifc_selu_lut_region_2;
     method Tuple2#(Bit#(5), Bit#(2)) mv_sig_output(Bit#(4) exp, Bit#(2) man);
   endinterface
 
-  module mkselu_lut_region_1(Ifc_selu_lut_region_2);
+  module mkselu_lut_region_2(Ifc_selu_lut_region_2);
     Reg#(Bit#(2)) rg_man_output[376];
     rg_man_output[0] = readOnlyReg(0);
     rg_man_output[1] = readOnlyReg(1);
