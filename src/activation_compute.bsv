@@ -231,7 +231,6 @@ package activation_compute;
               lv_output.flags.overflow = True;
             end
             2'b11: begin
-              //$display("Hello");
               lv_output.final_exp = data.act_exp - 6;
               lv_output.final_mantissa = 4'b1000;
               lv_output.flags.overflow = True;
@@ -263,10 +262,7 @@ package activation_compute;
       else if (computed_output.final_exp >= signExtend(-bias-3)
               && computed_output.final_exp < signExtend(-bias)) begin
         //Integer number_of_shift = unpack(pack(-bias)) + unpack(pack(-compute_output.final_exp));
-        $display(computed_output.final_mantissa);
-        $display(signExtend(-bias) - computed_output.final_exp);
         Bit#(4) calc_final_mantissa = computed_output.final_mantissa >> (signExtend(-bias) - computed_output.final_exp);
-        $display(calc_final_mantissa);
         if (calc_final_mantissa[0] == 1)
           calc_final_mantissa = calc_final_mantissa + 1;
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
@@ -281,14 +277,12 @@ package activation_compute;
                                     };
       end
       else begin
-        $display("before: %d", computed_output.final_mantissa);
         if (computed_output.final_mantissa[0] == 1)
           computed_output.final_mantissa = computed_output.final_mantissa + 1;
         if (computed_output.final_mantissa == 0) begin
           computed_output.final_mantissa = 4'b1000;
           computed_output.final_exp = computed_output.final_exp + 1;
         end
-        $display("after: %d", computed_output.final_mantissa);
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: pack(truncate(signExtend(bias) + computed_output.final_exp)), 
                                       mantissa: computed_output.final_mantissa[2:1]
