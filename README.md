@@ -7,6 +7,7 @@ Details about the cfloat_1_5_2 datatype can be found in the below link:
 https://cdn.motor1.com/pdf-files/535242876-tesla-dojo-technology.pdf
 
 The repo structure is as follows:
+```bash
 .
 ├── Makefile
 ├── README.md
@@ -32,7 +33,7 @@ The repo structure is as follows:
 │   ├── leakyReLu_ref_human.txt - Human readable verif text file for leakyReLu
 │   ├── reference_model.py - Python reference model to generate input/output combinations
 │   └── sigmoid_ref.txt - Verif text file for sigmoid
-
+```
 
 - All the Design decisions and algorithm details are embedded in the code src/activation_compute.bsv
 
