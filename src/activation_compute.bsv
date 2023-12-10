@@ -3,11 +3,37 @@ Details:
 The top module where all the computing submodules are instantiated and controlled
 as per required.
 
+Inputs:
+  Input number in cfloat_1_5_2 format.
+  Bias associated with the input number.
+Outputs:
+  Output calculated number in cfloat_1_5_2 format.
+  Flags raised from the calculation
+
+Algorithm details:
+  Sigmoid(x):
+    For all the possible inputs of cfloat_1_5_2, the outputs for that has been analysed and came to a 
+    conclusion to implement a LUT design for it. In the sense the unique output for each input is stored
+    (i.e) hardcoded. 
+  Tanh(x):
+    Tanh can be calculated from sigmoid using the below formula:
+      tanh(x) = 2 * sigmoid(2 * x) - 1
+  LeakyReLu(x):
+    The output for input being positive is the same as input.
+    When input is negative, the output is 0.01 * input. 0.01 is represented as 1.01 * 2^-7 is cfloat.
+    With only 4 possible normal mantissas for cfloat_1_5_2, the multiplication was handcalculated and the 
+    output was assigned as accordingly hardcoded.
+  SeLu(x):
+    Formala:
+      if x < 0 => SeLu(x) = alpha * scale * (exp(x) - 1)
+    Calculating exp(x) is costly. So all unique outputs of SeLu(x) has been stored in a LUT format as in
+    sigmoid and the output is calculated accordingly.
+
 Notes on Exceptions:
-Invalid flag is never set as cfloat_1_5_2 implementation doesnt support NaN encodings.
-Denormal flag is set when there is an operation with operand being a denormal number.
-Overflow flag is set when the number was not able to be represented in the 2 mantissa bits of the format.
-Underflow flag is set when the computed number is less than smallest possible number (i.e) 0.25 x 2^-bias.
+  Invalid flag is never set as cfloat_1_5_2 implementation doesnt support NaN encodings.
+  Denormal flag is set when there is an operation with operand being a denormal number.
+  Overflow flag is set when the number was not able to be represented in the 2 mantissa bits of the format.
+  Underflow flag is set when the computed number is less than smallest possible number (i.e) 0.25 x 2^-bias.
 Author: Mouna Krishna
 email: mounakrishna27121999@gmail.com
 */
@@ -114,6 +140,7 @@ package activation_compute;
                                       });
     endrule: rl_preprocessing
 
+    /*doc: rule: This rule computes the sigmoid of input. Algo details on top.*/
     rule rl_compute_sigmoid(ff_compute.first.op == Sigmoid && ff_compute.notEmpty);
       ff_compute.deq;
       let data = ff_compute.first;
@@ -131,6 +158,7 @@ package activation_compute;
       ff_post_process.enq(lv_output);
     endrule
 
+    /*doc: rule: This rule computes the Tanh of input. Algo details on top.*/
     rule rl_compute_tanh(ff_compute.first.op == Tanh && ff_compute.notEmpty);
       ff_compute.deq;
       let data = ff_compute.first;
@@ -150,6 +178,7 @@ package activation_compute;
       ff_post_process.enq(lv_output);
     endrule
 
+    /*doc: rule: Thie rule computes the SeLu(x) of input. Algo details on top.*/
     rule rl_compute_seluh(ff_compute.first.op == SeLu && ff_compute.notEmpty);
       ff_compute.deq;
       let data = ff_compute.first;
@@ -246,6 +275,8 @@ package activation_compute;
       ff_post_process.enq(lv_output);
     endrule: rl_compute_LeakyReLu
 
+    /*doc: rule: This rule takes in the computed value from previous stage and does necessary rounding,
+           normalisation depending on the mantissa and exponent.*/
     rule rl_postprocessing(ff_post_process.notEmpty);
       ff_post_process.deq;
       let computed_output = ff_post_process.first;
