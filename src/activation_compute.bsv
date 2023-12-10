@@ -47,8 +47,8 @@ package activation_compute;
     Ifc_sigmoid_lut_region_2 sigmoid_lut2 <- mksigmoid_lut_region_2;
 
     Ifc_selu_lut_region_1 selu_lut1 <- mkselu_lut_region_1;
-    Ifc_selu_lut_region_2 selu_lut2 <- mkselu_lut_region_2;
-    Ifc_selu_lut_region_3 selu_lut3 <- mkselu_lut_region_3;
+    //Ifc_selu_lut_region_2 selu_lut2 <- mkselu_lut_region_2;
+    //Ifc_selu_lut_region_3 selu_lut3 <- mkselu_lut_region_3;
 
     function Tuple2#(Bit#(4), Int#(8)) fn_compute_sigmoid(ComputeStageMeta data);
       Bit#(4) final_mantissa;
@@ -120,6 +120,7 @@ package activation_compute;
 
       PostprocessStageMeta lv_output;
       let bias = data.bias;
+      lv_output.bias = data.bias;
       lv_output.flags = data.flags;
       lv_output.final_sign = 0;
 
@@ -146,7 +147,7 @@ package activation_compute;
       ff_post_process.enq(lv_output);
     endrule
 
-    rule rl_compute_seluh(ff_compute_first.op == SeLu && ff_compute.notEmpty);
+    rule rl_compute_seluh(ff_compute.first.op == SeLu && ff_compute.notEmpty);
       ff_compute.deq;
       let data = ff_compute.first;
 
@@ -163,7 +164,7 @@ package activation_compute;
         end
         else if (data.act_exp >= -54 && data.act_exp <= 0) begin
           Bit#(6) exp_index = truncate(pack(data.act_exp + 54));
-          let lut_output = sigmoid_lut1.mv_sig_output(exp_index, data.act_mantissa[1:0]);
+          let lut_output = selu_lut1.mv_selu_output(exp_index, data.act_mantissa[1:0]);
           lv_output.final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
           lv_output.final_exp = signExtend(tpl_1(lut_output));
         end

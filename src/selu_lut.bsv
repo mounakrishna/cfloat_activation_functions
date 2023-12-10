@@ -6,7 +6,7 @@ package selu_lut;
   import common :: *;
 
   interface Ifc_selu_lut_region_1;
-    method Tuple2#(Bit#(5), Bit#(2)) mv_selu_output(Bit#(6) exp, Bit#(2) man);
+    method Tuple2#(Int#(7), Bit#(2)) mv_selu_output(Bit#(6) exp, Bit#(2) man);
   endinterface
 
   module mkselu_lut_region_1(Ifc_selu_lut_region_1);
@@ -458,7 +458,7 @@ package selu_lut;
 
     method Tuple2#(Int#(7), Bit#(2)) mv_selu_output(Bit#(6) exp, Bit#(2) man);
       Bit#(8) index = {exp, man};
-      return tuple2(rg_man_output[index], rg_exp_output[index]);
+      return tuple2(rg_exp_output[index], rg_man_output[index]);
     endmethod
   endmodule
 
