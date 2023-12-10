@@ -21,6 +21,7 @@ package activation_compute;
   import common :: *;
   import SpecialFIFOs :: *;
   import sigmoid_lut :: *;
+  import selu_lut :: *;
 
   interface Ifc_activation_compute;
     method Action ma_input(Cfloat_1_5_2 inp, Int#(6) bias, Operation op);
@@ -44,6 +45,49 @@ package activation_compute;
 
     Ifc_sigmoid_lut_region_1 sigmoid_lut1 <- mksigmoid_lut_region_1;
     Ifc_sigmoid_lut_region_2 sigmoid_lut2 <- mksigmoid_lut_region_2;
+
+    Ifc_selu_lut_region_1 selu_lut1 <- mkselu_lut_region_1;
+    Ifc_selu_lut_region_2 selu_lut2 <- mkselu_lut_region_2;
+    Ifc_selu_lut_region_3 selu_lut3 <- mkselu_lut_region_3;
+
+    function Tuple2#(Bit#(4), Int#(8)) fn_compute_sigmoid(ComputeStageMeta data);
+      Bit#(4) final_mantissa;
+      Int#(8) final_exp;
+      if (data.sign == 1) begin
+        if (data.act_exp >= -63 && data.act_exp <= -4) begin
+          final_mantissa = 4'b1000;
+          final_exp = -1;
+        end
+        else if (data.act_exp >= -3 && data.act_exp <= 5) begin
+          Bit#(4) exp_index = truncate(pack(data.act_exp + 3));
+          let lut_output = sigmoid_lut1.mv_sig_output(exp_index, data.act_mantissa[1:0]);
+          final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
+          final_exp = signExtend(tpl_1(lut_output));
+        end
+        else begin // exp >= 6
+          final_mantissa = 0;
+          final_exp = 0;
+        end
+      end
+      else begin
+        if (data.act_exp >= -63 && data.act_exp <= -3) begin
+          final_mantissa = 0;
+          final_exp = -1;
+        end
+        else if (data.act_exp >= -2 && data.act_exp <= 1) begin
+          Bit#(2) exp_index = truncate(pack(data.act_exp + 2));
+          let lut_output = sigmoid_lut2.mv_sig_output(exp_index, data.act_mantissa[1:0]);
+          final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
+          final_exp = signExtend(tpl_1(lut_output));
+        end
+        else begin
+          final_mantissa = {1'b1, 2'b11, 1'b0};
+          final_exp = 0;
+        end
+      end
+
+      return tuple2(final_mantissa, final_exp);
+    endfunction
 
     /*doc: rule: Get the inputs, preprocess the input and fire the corresponding rules
            for the required operation.  
@@ -79,42 +123,61 @@ package activation_compute;
       lv_output.flags = data.flags;
       lv_output.final_sign = 0;
 
+      let tmp_output = fn_compute_sigmoid(data);
+      lv_output.final_mantissa = tpl_1(tmp_output);
+      lv_output.final_exp = tpl_2(tmp_output);
+
+      ff_post_process.enq(lv_output);
+    endrule
+
+    rule rl_compute_tanh(ff_compute.first.op == Tanh && ff_compute.notEmpty);
+      ff_compute.deq;
+      let data = ff_compute.first;
+
+      PostprocessStageMeta lv_output;
+      let bias = data.bias;
+      lv_output.bias = data.bias;
+      lv_output.flags = data.flags;
+      lv_output.final_sign = data.sign;
+      
+      lv_output.final_mantissa = {data.act_mantissa, 1'b0};
+      lv_output.final_exp = signExtend(data.act_exp);
+
+      ff_post_process.enq(lv_output);
+    endrule
+
+    rule rl_compute_seluh(ff_compute_first.op == SeLu && ff_compute.notEmpty);
+      ff_compute.deq;
+      let data = ff_compute.first;
+
+      PostprocessStageMeta lv_output;
+      let bias = data.bias;
+      lv_output.bias = data.bias;
+      lv_output.flags = data.flags;
+      lv_output.final_sign = data.sign;
+
       if (data.sign == 1) begin
-        if (data.act_exp >= -63 && data.act_exp <= -4) begin
-          lv_output.final_mantissa = 4'b1000;
-          lv_output.final_exp = -1;
+        if (data.act_exp >= -63 && data.act_exp <= -55) begin
+          lv_output.final_mantissa = 0;
+          lv_output.final_exp = 0;
         end
-        else if (data.act_exp >= -3 && data.act_exp <= 5) begin
-          Bit#(4) exp_index = truncate(pack(data.act_exp + 3));
+        else if (data.act_exp >= -54 && data.act_exp <= 0) begin
+          Bit#(6) exp_index = truncate(pack(data.act_exp + 54));
           let lut_output = sigmoid_lut1.mv_sig_output(exp_index, data.act_mantissa[1:0]);
           lv_output.final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
           lv_output.final_exp = signExtend(tpl_1(lut_output));
         end
-        else begin // exp >= 6
-          lv_output.final_mantissa = 0;
+        else begin
+          lv_output.final_mantissa = {1'b0, 2'b11, 1'b0};
           lv_output.final_exp = 0;
         end
       end
       else begin
-        if (data.act_exp == -63) begin
-          lv_output.final_mantissa = 0;
-          lv_output.final_exp = -1;
-        end
-        else if (data.act_exp >= -62 && data.act_exp <= -3) begin
-          lv_output.final_mantissa = 0;
-          lv_output.final_exp = 1;
-        end
-        else if (data.act_exp >= -2 && data.act_exp <= 1) begin
-          Bit#(2) exp_index = truncate(pack(data.act_exp + 2));
-          let lut_output = sigmoid_lut2.mv_sig_output(exp_index, data.act_mantissa[1:0]);
-          lv_output.final_mantissa = {1'b1, tpl_2(lut_output), 1'b0};
-          lv_output.final_exp = signExtend(tpl_1(lut_output));
-        end
-        else begin
-          lv_output.final_mantissa = {1'b1, 2'b11, 1'b0};
-          lv_output.final_exp = 0;
-        end
+        lv_output.final_mantissa = {data.act_mantissa, 1'b0};
+        lv_output.final_exp = signExtend(data.act_exp);
       end
+
+      ff_post_process.enq(lv_output);
     endrule
 
     /*doc: rule: The rule computes the LeakyReLu of the input data.
