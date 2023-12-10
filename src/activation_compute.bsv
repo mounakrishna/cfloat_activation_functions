@@ -140,10 +140,13 @@ package activation_compute;
       lv_output.bias = data.bias;
       lv_output.flags = data.flags;
       lv_output.final_sign = data.sign;
-      
-      lv_output.final_mantissa = {data.act_mantissa, 1'b0};
-      lv_output.final_exp = signExtend(data.act_exp);
 
+      data.act_exp = data.act_exp + 1;
+      let tmp_output = fn_compute_sigmoid(data);
+      
+      lv_output.final_mantissa = tpl_1(tmp_output) - 1;
+      lv_output.final_exp = tpl_2(tmp_output) + 1;
+      
       ff_post_process.enq(lv_output);
     endrule
 
