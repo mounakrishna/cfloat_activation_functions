@@ -252,17 +252,19 @@ package activation_compute;
       Cfloat_1_5_2 final_output;
       let bias = computed_output.bias;
 
-      if (computed_output.final_exp < signExtend(-bias-3)) begin
+      Int#(8) tmp_bias = signExtend(bias);
+      Int#(8) exp0 = -(tmp_bias+3);
+      if (computed_output.final_exp < -(tmp_bias+3)) begin
         computed_output.flags.underflow = True;
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: 0,
                                       mantissa: 2'b00
                                     };
       end
-      else if (computed_output.final_exp >= signExtend(-bias-3)
-              && computed_output.final_exp < signExtend(-bias)) begin
+      else if (computed_output.final_exp >= -(tmp_bias+3)
+              && computed_output.final_exp < -(tmp_bias)) begin
         //Integer number_of_shift = unpack(pack(-bias)) + unpack(pack(-compute_output.final_exp));
-        Bit#(4) calc_final_mantissa = computed_output.final_mantissa >> (signExtend(-bias) - computed_output.final_exp);
+        Bit#(4) calc_final_mantissa = computed_output.final_mantissa >> ((-tmp_bias) - computed_output.final_exp);
         if (calc_final_mantissa[0] == 1)
           calc_final_mantissa = calc_final_mantissa + 1;
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
@@ -270,21 +272,25 @@ package activation_compute;
                                       mantissa: calc_final_mantissa[2:1]
                                     };
       end
-      else if (computed_output.final_exp > signExtend(-bias + 31)) begin
+      else if (computed_output.final_exp > (-tmp_bias + 31)) begin
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
                                       exp: 31, 
                                       mantissa: 2'b11
                                     };
       end
       else begin
-        if (computed_output.final_mantissa[0] == 1)
+        if (computed_output.final_mantissa[0] == 1) begin
           computed_output.final_mantissa = computed_output.final_mantissa + 1;
-        if (computed_output.final_mantissa == 0) begin
-          computed_output.final_mantissa = 4'b1000;
-          computed_output.final_exp = computed_output.final_exp + 1;
+          if (computed_output.final_mantissa == 0) begin
+            computed_output.final_mantissa = 4'b1000;
+            computed_output.final_exp = computed_output.final_exp + 1;
+          end
         end
+        Int#(8) tmp_final_exp = signExtend(computed_output.final_exp);
+        Int#(8) tmp = tmp_bias + tmp_final_exp;
+        Bit#(5) e = pack(truncate(tmp));
         final_output = Cfloat_1_5_2 { sign : computed_output.final_sign,
-                                      exp: pack(truncate(signExtend(bias) + computed_output.final_exp)), 
+                                      exp: e, 
                                       mantissa: computed_output.final_mantissa[2:1]
                                     };
       end
