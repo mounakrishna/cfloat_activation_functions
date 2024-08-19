@@ -34,8 +34,8 @@ Notes on Exceptions:
   Denormal flag is set when there is an operation with operand being a denormal number.
   Overflow flag is set when the number was not able to be represented in the 2 mantissa bits of the format.
   Underflow flag is set when the computed number is less than smallest possible number (i.e) 0.25 x 2^-bias.
-Author: Mouna Krishna
-email: mounakrishna27121999@gmail.com
+Author: Morla Narendra/Mouna Krishna
+
 */
 
 package activation_compute;
